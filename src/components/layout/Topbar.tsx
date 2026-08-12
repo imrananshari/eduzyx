@@ -7,7 +7,6 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getMockUser } from "@/lib/auth/mockAuth";
-import { authClient } from "@/lib/auth/client";
 import { readStoredProfile } from "@/lib/auth/profile";
 import { roleLabel } from "@/lib/auth/roles";
 import { cachedJson, invalidateApiCache } from "@/lib/client/apiCache";
@@ -28,13 +27,11 @@ export function Topbar({
   const [profileOpen, setProfileOpen] = React.useState(false);
   const [appSession, setAppSession] = React.useState<AppSession | null>(null);
   const user = getMockUser(role);
-  const session = authClient.useSession();
-  const neonUser = session.data?.user;
-  const storedProfile = readStoredProfile(neonUser?.email ?? appSession?.email);
-  const email = neonUser?.email ?? appSession?.email ?? storedProfile?.email ?? "session@edumanage.app";
-  const displayName = appSession?.name ?? neonUser?.name ?? storedProfile?.fullName ?? user.name;
+  const storedProfile = readStoredProfile(appSession?.email);
+  const email = appSession?.email ?? storedProfile?.email ?? "session@edumanage.app";
+  const displayName = appSession?.name ?? storedProfile?.fullName ?? user.name;
   const displayRole = appSession?.role ?? storedProfile?.role ?? role;
-  const displayImage = appSession?.image ?? neonUser?.image ?? null;
+  const displayImage = appSession?.image ?? null;
   const initials = displayName
     .split(" ")
     .map((part) => part[0])

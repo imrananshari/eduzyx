@@ -1,0 +1,534 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleName {
+  BOSS
+  SUPERADMIN
+  BRANCH_ADMIN
+  BRANCH_ACCOUNT_ADMIN
+  ADMIN
+  TEACHER
+  PARENT
+  STUDENT
+  ACCOUNTANT
+  STAFF
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  GRADUATED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+  OVERDUE
+  FAILED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      RoleName
+  imageUrl  String?
+  phone     String?
+  age       Int?
+  gender    String?
+  status    String   @default("active")
+  schoolId  String?
+  branchId  String?
+  emailVerified Boolean @default(false)
+  passwordHash String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId])
+  @@index([branchId])
+  @@index([role])
+}
+
+model UserInviteToken {
+  id        String   @id @default(cuid())
+  targetUserId String
+  createdByUserId String
+  email     String
+  role      RoleName
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([targetUserId])
+  @@index([createdByUserId])
+}
+
+model School {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  type      String
+  board     String
+  academicYearStart String
+  academicYearEnd   String
+  timezone  String
+  currency  String
+  email     String
+  phone     String
+  whatsappPhone String?
+  website   String?
+  addressLine1 String
+  addressLine2 String?
+  city      String
+  state     String
+  country   String
+  postalCode String
+  logoUrl   String?
+  coverImageUrl String?
+  principalName String?
+  registrationNumber String?
+  taxNumber String?
+  attendanceMode String
+  feeCycle String
+  studentIdPrefix String
+  receiptPrefix String
+  defaultClassCapacity Int
+  classFrom String @default("Nursery")
+  classTo String @default("Class 12")
+  parentPortalEnabled Boolean @default(true)
+  studentPortalEnabled Boolean @default(true)
+  whatsappEnabled Boolean @default(false)
+  paymentsEnabled Boolean @default(false)
+  status String @default("onboarding")
+  ownerUserId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SchoolBranch {
+  id        String   @id @default(cuid())
+  schoolId  String
+  name      String
+  code      String
+  type      String
+  isMain    Boolean  @default(false)
+  status    String   @default("active")
+  email     String
+  phone     String
+  whatsappPhone String?
+  addressLine1 String
+  addressLine2 String?
+  city      String
+  state     String
+  country   String
+  postalCode String
+  branchHeadName String?
+  branchAdminUserId String?
+  academicYear String
+  attendanceMode String
+  feeCycle String
+  defaultClassCapacity Int
+  classFrom String @default("Nursery")
+  classTo String @default("Class 12")
+  workingDays String
+  timetableStart String
+  timetableEnd String
+  logoUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, code])
+  @@index([schoolId])
+}
+
+model EmailOtp {
+  id         String   @id @default(cuid())
+  email      String
+  purpose    String
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([email, purpose, createdAt])
+}
+
+model TeacherInviteToken {
+  id        String   @id @default(cuid())
+  teacherId String
+  userId    String
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([teacherId])
+}
+
+model Student {
+  id          String        @id @default(cuid())
+  schoolId    String?
+  branchId    String?
+  userId      String?
+  studentCode String        @unique
+  admissionNumber String?
+  rollNo      String?
+  name        String
+  status      StudentStatus @default(ACTIVE)
+  classId     String?
+  sectionId   String?
+  parentId    String?
+  imageUrl    String?
+  dateOfBirth DateTime?
+  gender      String?
+  bloodGroup  String?
+  admissionDate DateTime?
+  emergencyContactName String?
+  emergencyContactPhone String?
+  addressLine1 String?
+  addressLine2 String?
+  city        String?
+  state       String?
+  postalCode  String?
+  idCardIssuedAt DateTime?
+  idCardExpiresAt DateTime?
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([schoolId])
+  @@index([branchId])
+  @@index([classId])
+  @@index([sectionId])
+  @@index([parentId])
+}
+
+model Parent {
+  id        String   @id @default(cuid())
+  schoolId  String?
+  branchId  String?
+  userId    String?
+  name      String
+  email     String?
+  phone     String
+  relation  String?
+  alternatePhone String?
+  addressLine1 String?
+  addressLine2 String?
+  city      String?
+  state     String?
+  postalCode String?
+  createdAt DateTime @default(now())
+
+  @@index([schoolId])
+  @@index([branchId])
+  @@index([email])
+  @@index([phone])
+}
+
+model ParentInviteToken {
+  id        String   @id @default(cuid())
+  parentId  String
+  userId    String
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([parentId])
+}
+
+model StudentDocument {
+  id        String   @id @default(cuid())
+  studentId String
+  title     String
+  type      String
+  url       String
+  createdAt DateTime @default(now())
+
+  @@index([studentId])
+}
+
+model StudentIdSetting {
+  id        String   @id @default(cuid())
+  schoolId  String
+  branchId  String?
+  classId   String?
+  sectionId String?
+  prefix    String
+  nextNumber Int     @default(1)
+  padding   Int      @default(4)
+  includeYear Boolean @default(true)
+  separator String   @default("-")
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@index([schoolId])
+  @@index([branchId])
+  @@index([classId])
+  @@index([sectionId])
+}
+
+model CodeSequenceSetting {
+  id        String   @id @default(cuid())
+  schoolId  String
+  branchId  String?
+  entityType String
+  label     String
+  prefix    String
+  pattern   String
+  nextNumber Int     @default(1)
+  padding   Int      @default(4)
+  resetCycle String  @default("never")
+  status    String   @default("active")
+  createdByUserId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId])
+  @@index([branchId])
+  @@index([entityType])
+  @@index([status])
+}
+
+model CodeGenerationLog {
+  id        String   @id @default(cuid())
+  settingId String
+  schoolId  String
+  branchId  String?
+  entityType String
+  generatedCode String
+  generatedForId String?
+  createdAt DateTime @default(now())
+
+  @@index([settingId])
+  @@index([schoolId])
+  @@index([branchId])
+  @@index([entityType])
+  @@unique([schoolId, generatedCode])
+}
+
+model Teacher {
+  id        String   @id @default(cuid())
+  schoolId  String?
+  branchId  String?
+  userId    String?
+  name      String
+  email     String?
+  phone     String?
+  employeeCode String?
+  designation String?
+  qualification String?
+  experienceYears Int?
+  status String @default("active")
+  subjectId String?
+  imageUrl  String?
+  joinedAt DateTime?
+  createdAt DateTime @default(now())
+}
+
+model TeacherBranchTransfer {
+  id        String   @id @default(cuid())
+  teacherId String
+  schoolId  String
+  fromBranchId String?
+  toBranchId String?
+  reason String
+  effectiveDate DateTime
+  createdByUserId String
+  createdAt DateTime @default(now())
+
+  @@index([teacherId])
+  @@index([schoolId])
+}
+
+model Accountant {
+  id        String   @id @default(cuid())
+  userId    String?
+  name      String
+  createdAt DateTime @default(now())
+}
+
+model Class {
+  id        String   @id @default(cuid())
+  schoolId  String?
+  branchId  String?
+  name      String
+  description String?
+  capacity  Int
+  teacherId String?
+  createdAt DateTime @default(now())
+}
+
+model ClassTeacherAssignment {
+  id        String   @id @default(cuid())
+  schoolId  String
+  branchId  String
+  classId   String
+  sectionId String?
+  teacherId String
+  subjectId String
+  dayOfWeek String
+  startTime String
+  endTime   String
+  room      String?
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId])
+  @@index([branchId])
+  @@index([classId])
+  @@index([teacherId])
+  @@index([subjectId])
+}
+
+model Section {
+  id      String @id @default(cuid())
+  schoolId String?
+  branchId String?
+  name    String
+  classId String
+}
+
+model Subject {
+  id      String @id @default(cuid())
+  schoolId String?
+  branchId String?
+  name    String
+  classId String?
+}
+
+model Attendance {
+  id        String           @id @default(cuid())
+  studentId String
+  classId   String?
+  date      DateTime
+  status    AttendanceStatus
+  createdAt DateTime         @default(now())
+}
+
+model Homework {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  classId     String?
+  sectionId   String?
+  subjectId   String?
+  dueDate     DateTime
+  mediaAssetId String?
+  createdAt   DateTime @default(now())
+}
+
+model HomeworkSubmission {
+  id          String   @id @default(cuid())
+  homeworkId  String
+  studentId   String
+  status      String
+  submittedAt DateTime?
+}
+
+model Exam {
+  id        String   @id @default(cuid())
+  title     String
+  classId   String?
+  startsAt  DateTime?
+  createdAt DateTime @default(now())
+}
+
+model Result {
+  id        String   @id @default(cuid())
+  examId    String
+  studentId String
+  marks     Float
+  grade     String?
+}
+
+model Fee {
+  id        String   @id @default(cuid())
+  title     String
+  amount    Int
+  classId   String?
+  dueDate   DateTime?
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  studentId       String
+  feeId           String?
+  amount          Int
+  status          PaymentStatus
+  stripeSessionId String?
+  createdAt       DateTime      @default(now())
+}
+
+model Notice {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  audience  String
+  createdAt DateTime @default(now())
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  title     String
+  type      String
+  fileUrl   String?
+  createdAt DateTime @default(now())
+}
+
+model WhatsAppMessage {
+  id         String   @id @default(cuid())
+  templateId String?
+  toPhone    String
+  body       String
+  status     String
+  createdAt  DateTime @default(now())
+}
+
+model WhatsAppTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  category  String
+  body      String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model AIRequest {
+  id        String   @id @default(cuid())
+  feature   String
+  prompt    String
+  output    String?
+  createdAt DateTime @default(now())
+}
+
+model MediaAsset {
+  id        String   @id @default(cuid())
+  title     String
+  type      String
+  url       String
+  ownerId   String?
+  createdAt DateTime @default(now())
+}

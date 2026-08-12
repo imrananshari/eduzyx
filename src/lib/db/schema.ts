@@ -1,0 +1,30 @@
+export const neonSchemaModels = [
+  "User",
+  "School",
+  "SchoolBranch",
+  "Role",
+  "Student",
+  "Parent",
+  "Teacher",
+  "TeacherBranchTransfer",
+  "TeacherInviteToken",
+  "Accountant",
+  "Class",
+  "Section",
+  "Subject",
+  "Attendance",
+  "Homework",
+  "HomeworkSubmission",
+  "Exam",
+  "Result",
+  "Fee",
+  "Payment",
+  "Notice",
+  "Report",
+  "WhatsAppMessage",
+  "WhatsAppTemplate",
+  "AIRequest",
+  "MediaAsset"
+] as const;
+
+export type NeonSchemaModel = (typeof neonSchemaModels)[number];

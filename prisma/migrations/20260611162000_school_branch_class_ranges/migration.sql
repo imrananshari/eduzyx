@@ -1,0 +1,5 @@
+ALTER TABLE "School" ADD COLUMN "classFrom" TEXT NOT NULL DEFAULT 'Nursery';
+ALTER TABLE "School" ADD COLUMN "classTo" TEXT NOT NULL DEFAULT 'Class 12';
+
+ALTER TABLE "SchoolBranch" ADD COLUMN "classFrom" TEXT NOT NULL DEFAULT 'Nursery';
+ALTER TABLE "SchoolBranch" ADD COLUMN "classTo" TEXT NOT NULL DEFAULT 'Class 12';

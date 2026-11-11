@@ -3,6 +3,7 @@ import { getCurrentUserContext } from "@/lib/auth/currentUser";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/services/auth/passwordService";
 import { createParentInvite } from "@/lib/services/auth/parentInviteService";
+import { generateNextCode } from "@/lib/services/codes/codeGenerator";
 
 type StudentListRow = {
   id: string;
@@ -115,6 +116,37 @@ async function generateStudentCode(schoolId: string, branchId: string | null, cl
     select count(*)::int as "count" from "Student" where "schoolId" = ${schoolId} and "studentCode" like ${`${prefix}-%`}
   `;
   return `${prefix}-${String((counts[0]?.count ?? 0) + 1).padStart(4, "0")}`;
+}
+
+async function generateStudentCodeFromSettings({
+  schoolId,
+  branchId,
+  classId,
+  sectionId,
+  studentId,
+  className,
+  sectionName
+}: {
+  schoolId: string;
+  branchId: string | null;
+  classId: string;
+  sectionId: string;
+  studentId: string;
+  className: string | null;
+  sectionName: string | null;
+}) {
+  try {
+    return await generateNextCode({
+      schoolId,
+      branchId,
+      entityType: "student",
+      generatedForId: studentId,
+      context: { className, sectionName }
+    });
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.includes("No active code setting")) throw error;
+    return generateStudentCode(schoolId, branchId, classId, sectionId);
+  }
 }
 
 async function createOrUpdateParentUser({
@@ -264,20 +296,20 @@ export async function POST(request: Request) {
     }
 
     const classes = branchId
-      ? await prisma.$queryRaw<Array<{ id: string }>>`
-          select "id" from "Class" where "id" = ${classId} and "schoolId" = ${user.schoolId} and "branchId" = ${branchId} limit 1
+      ? await prisma.$queryRaw<Array<{ id: string; name: string | null }>>`
+          select "id", "name" from "Class" where "id" = ${classId} and "schoolId" = ${user.schoolId} and "branchId" = ${branchId} limit 1
         `
-      : await prisma.$queryRaw<Array<{ id: string }>>`
-          select "id" from "Class" where "id" = ${classId} and "schoolId" = ${user.schoolId} and "branchId" is null limit 1
+      : await prisma.$queryRaw<Array<{ id: string; name: string | null }>>`
+          select "id", "name" from "Class" where "id" = ${classId} and "schoolId" = ${user.schoolId} and "branchId" is null limit 1
         `;
     if (!classes[0]) return NextResponse.json({ error: "Selected class does not belong to this location." }, { status: 400 });
 
     const sections = branchId
-      ? await prisma.$queryRaw<Array<{ id: string }>>`
-          select "id" from "Section" where "id" = ${sectionId} and "classId" = ${classId} and "schoolId" = ${user.schoolId} and "branchId" = ${branchId} limit 1
+      ? await prisma.$queryRaw<Array<{ id: string; name: string | null }>>`
+          select "id", "name" from "Section" where "id" = ${sectionId} and "classId" = ${classId} and "schoolId" = ${user.schoolId} and "branchId" = ${branchId} limit 1
         `
-      : await prisma.$queryRaw<Array<{ id: string }>>`
-          select "id" from "Section" where "id" = ${sectionId} and "classId" = ${classId} and "schoolId" = ${user.schoolId} and "branchId" is null limit 1
+      : await prisma.$queryRaw<Array<{ id: string; name: string | null }>>`
+          select "id", "name" from "Section" where "id" = ${sectionId} and "classId" = ${classId} and "schoolId" = ${user.schoolId} and "branchId" is null limit 1
         `;
     if (!sections[0]) return NextResponse.json({ error: "Selected section does not belong to this class." }, { status: 400 });
 
@@ -325,7 +357,15 @@ export async function POST(request: Request) {
     }
 
     const studentId = crypto.randomUUID();
-    const studentCode = await generateStudentCode(user.schoolId, branchId, classId, sectionId);
+    const studentCode = await generateStudentCodeFromSettings({
+      schoolId: user.schoolId,
+      branchId,
+      classId,
+      sectionId,
+      studentId,
+      className: classes[0].name,
+      sectionName: sections[0].name
+    });
     const admissionDate = parseDate(body.admissionDate) ?? new Date();
     const issuedAt = new Date();
     const expiresAt = new Date(issuedAt);

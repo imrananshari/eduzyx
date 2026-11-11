@@ -3,6 +3,7 @@ import { getCurrentUserContext } from "@/lib/auth/currentUser";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/services/auth/passwordService";
 import { createTeacherInvite } from "@/lib/services/auth/teacherInviteService";
+import { generateNextCode } from "@/lib/services/codes/codeGenerator";
 
 type TeacherRow = {
   id: string;
@@ -31,6 +32,30 @@ function text(value: unknown, fallback = "") {
 function nullableText(value: unknown) {
   const clean = text(value);
   return clean || null;
+}
+
+async function generateTeacherCode(schoolId: string, branchId: string | null, teacherId: string, manualCode: unknown, designation: unknown) {
+  const typedCode = text(manualCode);
+  if (typedCode) return typedCode;
+
+  try {
+    return await generateNextCode({
+      schoolId,
+      branchId,
+      entityType: "teacher",
+      generatedForId: teacherId,
+      context: { type: text(designation, "teacher") }
+    });
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.includes("No active code setting")) throw error;
+
+    const year = new Date().getFullYear();
+    const prefix = `TEC-${year}`;
+    const counts = await prisma.$queryRaw<Array<{ count: number }>>`
+      select count(*)::int as "count" from "Teacher" where "schoolId" = ${schoolId} and "employeeCode" like ${`${prefix}-%`}
+    `;
+    return `${prefix}-${String((counts[0]?.count ?? 0) + 1).padStart(4, "0")}`;
+  }
 }
 
 async function ensureSubject(schoolId: string, branchId: string | null, name: string) {
@@ -184,6 +209,7 @@ export async function POST(request: Request) {
     const userId = existingUsers[0]?.id ?? crypto.randomUUID();
     const subjectId = await ensureSubject(user.schoolId, branchId, text(body.subject));
     const teacherId = crypto.randomUUID();
+    const employeeCode = await generateTeacherCode(user.schoolId, branchId, teacherId, body.employeeCode, body.designation);
 
     if (!existingUsers[0]) {
       await prisma.$executeRaw`
@@ -208,7 +234,7 @@ export async function POST(request: Request) {
         "qualification", "experienceYears", "status", "subjectId", "imageUrl", "joinedAt", "createdAt"
       )
       values (
-        ${teacherId}, ${user.schoolId}, ${branchId}, ${userId}, ${name}, ${email}, ${phone}, ${nullableText(body.employeeCode)},
+        ${teacherId}, ${user.schoolId}, ${branchId}, ${userId}, ${name}, ${email}, ${phone}, ${employeeCode},
         ${nullableText(body.designation)}, ${nullableText(body.qualification)}, ${experienceYears}, ${text(body.status, "active")},
         ${subjectId}, ${nullableText(body.imageUrl)}, now(), now()
       )

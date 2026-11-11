@@ -334,7 +334,7 @@ export function TeachersManager() {
               <Field label="Full name"><Input className="border-ink/10" required value={form.name} onChange={(event) => updateForm("name", event.target.value)} placeholder="Rhea Thomas" /></Field>
               <Field label="Email"><Input className="border-ink/10" required type="email" value={form.email} onChange={(event) => updateForm("email", event.target.value)} placeholder="teacher@school.edu" /></Field>
               <Field label="Phone"><Input className="border-ink/10" required value={form.phone} onChange={(event) => updateForm("phone", event.target.value)} placeholder="+91 90000 11001" /></Field>
-              <Field label="Employee code"><Input className="border-ink/10" value={form.employeeCode} onChange={(event) => updateForm("employeeCode", event.target.value)} placeholder="TCH-001" /></Field>
+              <Field label="Employee code"><Input className="border-ink/10" value={form.employeeCode} onChange={(event) => updateForm("employeeCode", event.target.value)} placeholder="Auto from Code Settings if blank" /></Field>
               <Field label="Designation"><SelectBox value={form.designation} onChange={(value) => updateForm("designation", value)} options={designationOptions} placeholder="Select designation" /></Field>
               <Field label="Qualification"><Input className="border-ink/10" value={form.qualification} onChange={(event) => updateForm("qualification", event.target.value)} placeholder="M.Sc, B.Ed" /></Field>
               <Field label="Experience years"><Input className="border-ink/10" min={0} type="number" value={form.experienceYears} onChange={(event) => updateForm("experienceYears", event.target.value)} placeholder="5" /></Field>
